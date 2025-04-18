@@ -1,12 +1,12 @@
 #pragma once
-//#define gromacs_traj
-#define gen_cluster
+#define gromacs_traj
+//#define gen_cluster
 //#define gen_tetrahedron
 //#define gen_non_affine_D
 //#define gen_sq
 //#define gen_rdf
 //#define gen_MSD
-//#define gen_SISF
+#define gen_SISF
 //#define gen_position
 //#define gen_trajectory
 //#define gen_z
@@ -43,6 +43,7 @@ constexpr double Si_Si_d2 = 3.45 * 3.45; //坐标的单位为埃
 constexpr double Si_Si_S_d2 = 6.17 * 6.17;
 constexpr double Si_O_d2 = 2.19 * 2.19; 
 constexpr double error = 1e-6;
+constexpr bool using_arry = true;
 double Al_Al_d = 2.8, O_O_d2 = 0.0;
 bool first_layer;
 int Num_1 = 0, Num_2 = 0;

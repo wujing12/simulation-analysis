@@ -3,7 +3,14 @@ const double T_b = 2.728;
 const double T_k = -0.0001027;
 double S_k_max = 2.6295;//AlSm 2.67 SiO2 1.6275 CuZr: 2.75778, 2.76258, 2.76497, 2.76737
 constexpr double d_k = 0.005;
-
+inline void get_index_particle_first(size_t t, size_t i,  size_t d, size_t& index, size_t numConfigs)
+{
+	index = (i * numConfigs * Dim) + (t * Dim) + d;
+}
+inline void get_index_time_first(size_t t, size_t i, size_t d, size_t& index, size_t numConfigs)
+{
+	index = (i * numConfigs * Dim) + (t * Dim) + d;
+}
 inline std::vector<Vec3_wave_vector> max_wavevectors(const double(&L)[Dim]) {
 	cout << "S_k_max: " << S_k_max << endl;
 	//std::cout << "Start generate wavevectors! ";
@@ -66,31 +73,72 @@ inline void get_ISF(const std::vector<Vec3>& Positions, vector<double>& F_t_x, v
 	}
 }
 // 计算自中间散射函数
-inline vector<double> get_SISF(Trajectory& trajectory, const vector<vector<double>>& L_traj, const std::vector<Vec3_wave_vector>& wavevectors) {
+inline vector<long double> get_SISF(Trajectory& trajectory, const vector<vector<double>>& L_traj, const std::vector<Vec3_wave_vector>& wavevectors) {
 	unwrap_positions(trajectory, L_traj);
 	size_t numConfigs = trajectory.size(); // 构型数量
 	size_t numParticles = trajectory[0].size(); // 每个构型的粒子数量
-	vector<double> F_t(numConfigs - 2, 0.0);// F_t
-	// 遍历所有时间原点 t_k
+	if (atom_kind == "com") {
+		get_centroid(trajectory, numParticles);
+	}
+
+	vector<long double> F_t(numConfigs - 2, 0.0);// F_t
 	double dr[Dim] = { 0.0 };
 	double phi;
-	for (size_t t = 1; t < numConfigs - 1; ++t) { //间隔的构型数量
-		cout << t << endl;
-		for (size_t k = 0; k < numConfigs - t; ++k) { //初始第k个构型
-			// 对所有粒子求和
-			for (size_t i = 0; i < numParticles; ++i) {
-				dr[0] = trajectory[k + t][i][0] - trajectory[k][i][0];
-				dr[1] = trajectory[k + t][i][1] - trajectory[k][i][1];
-				dr[2] = trajectory[k + t][i][2] - trajectory[k][i][2];
-				for (const auto& waveVec : wavevectors) {
-					phi = dr[0] * waveVec.x + dr[1] * waveVec.y + dr[2] * waveVec.z;
-					F_t[t - 1] += cos(phi);
+	if (using_arry) {
+		// 将三维 trajectory 展开为一维数组
+		vector<double> trajectory_flat(numConfigs * numParticles * Dim, 0.0);
+		size_t p_serial = 0;
+		// 将 trajectory 数据填充到一维数组 trajectory_flat 中
+		for (size_t p = 0; p < numParticles; ++p) {
+			for (size_t t = 0; t < numConfigs; ++t) {
+				for (size_t d = 0; d < Dim; ++d) {
+					trajectory_flat[p * numConfigs * Dim + t * Dim + d] = trajectory[t][p][d];
 				}
 			}
-			// 平均所有时间原点和粒子
-			
 		}
-		F_t[t - 1] /= (numParticles * (numConfigs - t) * wavevectors.size());
+		// 遍历所有时间原点 t_k
+		for (size_t p = 0; p < numParticles; ++p) {  // 先对粒子循环
+			cout << p << endl;
+			p_serial = p * numConfigs * Dim;
+			for (size_t t = 1; t < numConfigs - 1; ++t) {  // 间隔的构型数量
+				for (size_t k = 0; k < numConfigs - t; ++k) {  // 初始第k个构型
+					for (size_t d = 0; d < Dim; ++d) {
+						dr[d] = trajectory_flat[p_serial + (k + t) * Dim + d] - trajectory_flat[p_serial + k * Dim + d];
+					}
+					// 计算 F_t[t - 1]
+					for (const auto& waveVec : wavevectors) {
+						phi = dr[0] * waveVec.x + dr[1] * waveVec.y + dr[2] * waveVec.z;
+						F_t[t - 1] += cos(phi);
+					}
+				}
+			}
+		}
+
+		// 平均
+		for (size_t t = 1; t < numConfigs - 1; ++t) {
+			F_t[t - 1] /= (numParticles * (numConfigs - t) * wavevectors.size());
+		}
 	}
+	else {
+		// 遍历所有时间原点 t_k
+		for (size_t t = 1; t < numConfigs - 1; ++t) { //间隔的构型数量
+			cout << t << endl;
+			for (size_t k = 0; k < numConfigs - t; ++k) { //初始第k个构型
+				// 对所有粒子求和
+				for (size_t i = 0; i < numParticles; ++i) {
+					dr[0] = trajectory[k + t][i][0] - trajectory[k][i][0];
+					dr[1] = trajectory[k + t][i][1] - trajectory[k][i][1];
+					dr[2] = trajectory[k + t][i][2] - trajectory[k][i][2];
+					for (const auto& waveVec : wavevectors) {
+						phi = dr[0] * waveVec.x + dr[1] * waveVec.y + dr[2] * waveVec.z;
+						F_t[t - 1] += cos(phi);
+					}
+				}
+				// 平均所有时间原点和粒子
+			}
+			F_t[t - 1] /= (numParticles * (numConfigs - t) * wavevectors.size());
+		}
+	}
+
 	return F_t;
 }

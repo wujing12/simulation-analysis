@@ -248,7 +248,7 @@ int main(int argc, char* argv[])
 
 #if defined(gen_ISF) || defined(gen_SISF)
 	std::vector<Vec3_wave_vector> wavevectors = max_wavevectors(L_mean);
-	string outname_ISF = dir_out + "ISF.txt";
+	string outname_ISF = dir_out + "ISF_" + atom_kind + ".txt";
 	string outname_SISF = dir_out + "SISF_" + atom_kind + ".txt";
 #endif
 
@@ -331,7 +331,7 @@ int main(int argc, char* argv[])
 	get_MSD(trajectory, L_traj, atom_kind);
 #endif
 #ifdef gen_SISF 		
-	vector<double> F_t;
+	vector<long double> F_t;
 	F_t = get_SISF(trajectory, L_traj, wavevectors);
 	std::ofstream out_SISF(outname_SISF, ios::out);
 	for (int i = 0; i < F_t.size(); i++) {

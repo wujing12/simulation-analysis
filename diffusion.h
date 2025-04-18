@@ -1,4 +1,32 @@
 #pragma once
+inline void get_centroid(Trajectory& trajectory, size_t& numParticles) {
+    // Precompute normalized masses
+    double total_mass = 0.0;
+    vector<double> norm_masses(N_atom_mol);
+    for (size_t serial = 0; serial < N_atom_mol; ++serial) {
+        total_mass += atom_masses_Toluene[serial];
+    }
+    for (size_t serial = 0; serial < N_atom_mol; ++serial) {
+        norm_masses[serial] = atom_masses_Toluene[serial] / total_mass;
+    }
+
+    // Convert trajectory to COM in-place
+    for (size_t t = 0; t < trajectory.size(); ++t) {
+        for (size_t j = 0; j < N_mol; ++j) {
+            double com[3] = { 0.0, 0.0, 0.0 };
+            for (size_t serial = 0; serial < N_atom_mol; ++serial) {
+                com[0] += norm_masses[serial] * trajectory[t][j * N_atom_mol + serial][0];
+                com[1] += norm_masses[serial] * trajectory[t][j * N_atom_mol + serial][1];
+                com[2] += norm_masses[serial] * trajectory[t][j * N_atom_mol + serial][2];
+            }
+            // Store COM in first atom's position
+            trajectory[t][j][0] = com[0];
+            trajectory[t][j][1] = com[1];
+            trajectory[t][j][2] = com[2];
+        }
+    }
+    numParticles = N_mol;
+}
 inline void unwrap_positions(Trajectory& trajectory, const vector<vector<double>>& L_traj) {
     size_t T = trajectory.size();      // 构型数量
     size_t N = trajectory[0].size();  // 粒子数
@@ -37,32 +65,7 @@ inline void get_MSD(Trajectory& trajectory, const vector<vector<double>>& L_traj
     size_t numParticles = trajectory[0].size(); // 每个构型的粒子数量
 
     if (atom_kind == "com") {
-        // Precompute normalized masses
-        double total_mass = 0.0;
-        vector<double> norm_masses(N_atom_mol);
-        for (size_t serial = 0; serial < N_atom_mol; ++serial) {
-            total_mass += atom_masses_Toluene[serial];
-        }
-        for (size_t serial = 0; serial < N_atom_mol; ++serial) {
-            norm_masses[serial] = atom_masses_Toluene[serial] / total_mass;
-        }
-
-        // Convert trajectory to COM in-place
-        for (size_t t = 0; t < numConfigs; ++t) {
-            for (size_t j = 0; j < N_mol; ++j) {
-                double com[3] = { 0.0, 0.0, 0.0 };
-                for (size_t serial = 0; serial < N_atom_mol; ++serial) {
-                    com[0] += norm_masses[serial] * trajectory[t][j * N_atom_mol + serial][0];
-                    com[1] += norm_masses[serial] * trajectory[t][j * N_atom_mol + serial][1];
-                    com[2] += norm_masses[serial] * trajectory[t][j * N_atom_mol + serial][2];
-                }
-                // Store COM in first atom's position
-                trajectory[t][j][0] = com[0];
-                trajectory[t][j][1] = com[1];
-                trajectory[t][j][2] = com[2];
-            }
-        }
-        numParticles = N_mol;
+        get_centroid(trajectory, numParticles);
     }
     vector<double> msd(numConfigs - 2, 0.0);// MSD 累加
     // 遍历所有时间原点 t_k
