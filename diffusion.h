@@ -67,10 +67,11 @@ inline void get_MSD(Trajectory& trajectory, const vector<vector<double>>& L_traj
     if (atom_kind == "com") {
         get_centroid(trajectory, numParticles);
     }
-    vector<double> msd(numConfigs - 2, 0.0);// MSD 累加
+    vector<double> msd(numConfigs - 1, 0.0);// MSD 累加
     // 遍历所有时间原点 t_k
     double dr[Dim] = { 0.0 };
-    for (size_t t = 1; t < numConfigs - 1; ++t) { //间隔的构型数量
+    for (size_t t = 1; t < numConfigs; ++t) { //间隔的构型数量
+        cout << t << endl;
         for (size_t k = 0; k < numConfigs - t; ++k) { //初始第k个构型
             // 对所有粒子求和
             for (size_t i = 0; i < numParticles; ++i) {

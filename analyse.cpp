@@ -29,6 +29,7 @@
 #include <numeric>
 #include <stack>
 #include <unordered_set>
+#include <omp.h>
 #include "eigen-3.4.0/Eigen/Eigen"
 
 using namespace std;
@@ -56,171 +57,92 @@ extern "C" {
 #include "matrix.h"
 #include "position.h"
 #include "read_traj.h"
-#include "matrix_water.h"
 #include "chi_4.h"
-#include "cluster_NA.h"
+#include "cluster.h"
 
 int main(int argc, char* argv[])
 {
 	int Tbegin = static_cast<int> (time(NULL));
-	functions = argv[1];
-	if (functions == "toluene_MSD" || functions == "toluene_sq" || functions == "toluene_rdf" || functions == "toluene_SISF") {
-		for (int i = 0; i < 24; i++) {
-			Temp_list.emplace_back(to_string(150 + i*10));
-		}
-		atom_kind = argv[2];
-		int i_temperature = stoi(argv[3]);
-		total_config = stoi(argv[4]);
-		string dir_save = argv[5];
-		S_k_max = stof(argv[6]);
-		traj_filename = "traj_comp.xtc";
-		dir_read = "../../data/" + Temp_list[i_temperature] + "K/";
-		dir_out = "../../data/" + dir_save + "/" + Temp_list[i_temperature] + "K_";
-		std::cout << dir_read << ". dir_out: " << dir_out << endl;
-	}
-	else if (functions == "supercritical_matrix" || functions == "supercritical_eigen") {
-		N = stoi(argv[2]);
-		cout << N << endl;
-		N_str = "N_" + to_string(N);
-		Pressure = argv[3];
-		Temperature = argv[4];
-		Simu_case = argv[5];
-		total_config = stoi(argv[6]);
-		traj_filename = argv[7];
-		out_label = argv[8];
-		dir_read = "../../data/Widom_line/" + N_str + "/" + Pressure + "/" + Temperature + "/" + Simu_case + "/";
-		dir_matrix = "../../data/Widom_line/matrix/";
-		dir_eigen = "../../data/Widom_line/eigen/";
-		matrix_name = dir_matrix + to_string(N) + "_" + Pressure + "_" + Temperature + "_" + out_label + ".txt";
-		eigen_name = dir_eigen + to_string(N) + "_" + Pressure + "_" + Temperature + "_" + out_label + "_eigen.txt";
-		std::cout << dir_read << ". traj_filename: " << traj_filename << ". matrix_name: " << matrix_name << ". eigen_name: " << eigen_name << endl;
-		N_micro = N;
-		const int GRID_SIZE = std::round(pow(N, 1.0 / 3.0)); //四舍五入
-	}
-	else if (functions == "Cu50Zr50") {
-		//atom_kind = argv[2];
-		//dir_data = argv[3];
-		//S_k_max = stof(argv[4]);
-		total_config = 1001;
-		ini_config = 0;
-		dir_read = "../../data/Cu50Zr50/";
-		dir_out = dir_read;
-		traj_filename = "new_long_eq_traj_T900.atom";
-		std::cout << dir_out << endl;
-	}
-	else if (functions == "SiO2_local_NA" || functions == "SiO2_p_u" || functions == "SiO2_NA" || functions == "SiO2_posi" || functions == "SiO2_z" || functions == "SiO2_cluster") { //SiO2拉伸
-		ini_config = 0;
-		atom_kind = argv[2];
-		dir_system = argv[3];
-		total_config = stoi(argv[4]);
-		dt = stoi(argv[5]);
-		O_O_d2 = stof(argv[6]);
-		first_layer = argv[7];
-		min_serial = stoi(argv[8]);
-		string dir_save = argv[9];
-		O_O_d2 = O_O_d2 * O_O_d2;
-		dir_out = "../../data/" + dir_save + "/" + dir_system + "_";
-		dir_read = "../../data/" + dir_system + "/";
-		std::cout << "dir_out: " << dir_out << ". dir_read: " << dir_read << ". dt: " << dt << ". O_O_d2: " << O_O_d2 << ". min_serial: " << min_serial << endl;
-	}
-	else if (functions == "AlSm_momentum" || functions == "AlSm_chi4") {
-		ini_config = 0;
-		atom_kind = argv[2];
-		dir_system = argv[3];
-		total_config = stoi(argv[4]);
-		traj_filename = argv[5];	
-		Al_Al_d = stof(argv[6]) / 3.0;
-		string dir_save = argv[7];
-		dir_read = "../../data/" + dir_system + "/";
-		dir_out = "../../data/" + dir_save + "/" + dir_system + "_";
-		std::cout << "dir_out: " << dir_out << ". dir_read: " << dir_read << ". Al_Al_d: " << Al_Al_d << endl;
-	}
-	else if (functions == "AlSm_matrix" || functions == "AlSm_eigen" || functions == "AlSm_posi") { 
-		atom_kind = argv[2];
-		Temperature = argv[3];
-		S_k_max = stof(argv[4]);
-		smoothing = (argv[5]);
+	project = argv[1];
+	if (project == "SiO2") {
+		dt = 0;
+		first_layer = "FL";
+	}else if (project == "AlSm") {
 		N_micro = 6 * 21 * 21 * 21;
 		micro_form = "6";
-		ini_config = 0;
-		total_config = 10000 - ini_config;
-		dir_read = "../../data/" + Temperature + "/";
-		std::cout << "atom_kind: " << atom_kind << ", time_interval: " << time_interval << endl;		
-		decompose_way = "none";
-		dir_matrix = "../../data/matrix/";
-		dir_eigen = "../../data/eigen/";
-		matrix_name = dir_matrix + Temperature + "_" + smoothing + ".txt";
-		eigen_name = dir_eigen + Temperature + "_" + smoothing + "_eigen.txt";
-		std::cout << dir_read << ". traj_filename: " << traj_filename << ". matrix_name: " << matrix_name << ". eigen_name: " << eigen_name << endl;
+		decompose_way = "SVD";
 	}
-	else if (functions == "supercooled") { //supercooled
-		dir_system = argv[2];
-		dir_data = argv[3];
-		dir_read = "../../data/raw/supercooled/" + dir_data + "/";
-		dir_out = dir_read;
-		M = stoi(argv[4]); //构型数
-		N_micro = stoi(argv[5]); //矩阵的微观态数量
-		micro_form = argv[6]; //矩阵形式
-		part = argv[7]; //前半部分，后半部分，全部
-		matrix_kind = argv[8]; //矩阵的种类
-		finite_size = "non_finite_size"; //是否研究有限尺寸
-		if_relative = "relative"; //是否减去平均值
-		matrix_name = "lattice_Gauss_vel_rot_Theta"; //矩阵名称  microstatepar_vel_rot_Theta
+	else if (project == "super_critical") { //"1000" "3375" "8000" "15625" "64000"	
+		N_micro = 1000; //矩阵的微观态数量
+		micro_form = 1; //矩阵形式
+		matrix_name = "lattice_nrho"; //矩阵名称
 		decompose_way = "SVD"; //分解方式
-		for (int i = 0; i < 10; i++) {Temp_list.emplace_back(to_string(i * 10 + 200));}
-		Temp_list.emplace_back(to_string(235));
-		std::cout << dir_read << ". M: " << M << ". N_micro: " << N_micro << ". micro_form: " << micro_form << ". part: " << part << ". matrix_kind: " << matrix_kind << ". matrix_name: " << matrix_name << endl;
-	}
-	else if (functions == "super_critical") {
-		dir_system = argv[2];
-		dir_data = argv[3];
-		dir_read = "../../data/raw/" + dir_data + "/";
-		dir_out = dir_read;
-		M = stoi(argv[4]); //构型数
-		N_micro = stoi(argv[5]); //矩阵的微观态数量
-		micro_form = argv[6]; //矩阵形式
-		finite_size = argv[7]; //是否研究有限尺寸
-		if_relative = argv[8]; //是否减去平均值
-		matrix_name = argv[9]; //矩阵名称
-		decompose_way = "Eigen"; //分解方式
-		for (int i = 0; i < 41; i++) {
-			Temp_list.emplace_back(to_string(i * 5 + 600));
-		}
-		vector<string> Temp_list_175 = { "648.7", "648.9", "649.1", "649.3", "649.5", "649.7", "649.9", "650.1", "650.3", "651", "652", "653", "654" };
-		if (dir_data == "175bar") {
-			for (int i = 0; i < Temp_list_175.size(); i++) {
-				Temp_list.emplace_back(Temp_list_175[i]);
-			}
-		}
-		std::cout << dir_read << ". M: " << M << ". N_micro: " << N_micro << ". micro_form: " << micro_form << ". finite_size: " << finite_size << ". if_relative: " << if_relative << ". matrix_name: " << matrix_name << endl;
-	}
-	else if (functions == "super_critical_finite_size") { //sbatch critical_finite_size.sh "1000" "3375" "8000" "15625" "64000"		
-		dir_system = argv[2];
-		dir_data = argv[3]; //压强
-		dir_read = "../../data/raw/WL/";
-		dir_out = dir_read;
-		M = stoi(argv[4]); //构型数
-		N_micro = stoi(argv[5]); //矩阵的微观态数量
-		micro_form = argv[6]; //矩阵形式
-		finite_size = argv[7]; //是否研究有限尺寸
-		if_relative = argv[8]; //是否减去平均值
-		matrix_name = argv[9]; //矩阵名称
-		decompose_way = argv[10]; //分解方式
-		std::cout << dir_read << ". M: " << M << ". N_micro: " << N_micro << ". micro_form: " << micro_form << ". finite_size: " << finite_size << ". if_relative: " << if_relative << ". matrix_name: " << matrix_name
+		std::cout << "N_micro: " << N_micro << ". micro_form: " << micro_form << ". matrix_name: " << matrix_name
 			<< ". decompose_way: " << decompose_way << endl;
-		int isCreate = createDir(dir_out);
-		if (isCreate == 0) {
-			cout << "created path: " << dir_out << endl;
+	}
+	string physics = argv[2];
+	if (physics == "MSD" || physics == "sq" || physics == "rdf" || physics == "SISF" || physics == "momentum" || physics == "chi4" || physics == "L" || physics == "ISF" ||
+		physics == "local_NA" || physics == "p_u" || physics == "NA" || physics == "posi" || physics == "z" || physics == "cluster" ||
+		physics == "matrix" || physics == "eigen") {
+		string dir_data = argv[3];
+		filename_input = argv[4]; //"traj_comp.xtc"; "traj_angular.atom";
+		atom_kind = argv[5];
+		total_config = stoi(argv[6]);
+		S_k_max = stof(argv[7]);
+		distance_cut = stof(argv[8]);
+		string i_case = argv[9];
+		if (physics == "chi4") {
+			distance_cut = distance_cut / 3.0;
 		}
 		else {
-			printf("error: create path failed!\n");
-			exit(-1);
+			distance_cut = distance_cut * distance_cut; //一般用距离的平方
 		}
+		dir_write = "../../data/" + physics + "/";
+		if (i_case == "none") {
+			dir_read = "../../data/" + dir_data + "/";
+			dir_out = dir_write + dir_data + "_";
+		}
+		else {
+			dir_read = "../../data/" + dir_data + "/" + i_case + "/";
+			dir_out = dir_write + dir_data + "_" + i_case + "_";
+		}
+		std::cout << dir_read << ". dir_out: " << dir_out << ". S_k_max: " << S_k_max << ". distance_cut: " << distance_cut << endl;
+		if (total_config <= 0) {
+			string file_traj = dir_read + filename_input;
+			//total_config = CountLines((char*)file_traj.c_str()) / (N + N_infor);
+			total_config = count_lines(file_traj) / (10009) - 1;
+		}
+		matrix_name = "../../data/matrix/" + dir_data + "_" + i_case + "_matrix_" + atom_kind + ".txt";
+		eigen_name = "../../data/eigen/" + dir_data + "_" + i_case + "_eigen_" + atom_kind + ".txt";
 	}
-	//total_config = CountLines((char*)file.c_str()) / (N + N_infor);
-	//total_config = count_lines(file_traj) / (N + N_infor);
-	const string file_traj = dir_read + traj_filename;
-
+	else if (physics == "matrix_s" || physics == "eigen_s") {
+		N = stoi(argv[2]);
+		cout << N << endl;
+		string N_str = "N_" + to_string(N);
+		string Pressure = argv[3];
+		string Temperature = argv[4];
+		string Simu_case = argv[5];
+		total_config = stoi(argv[6]);
+		filename_input = argv[7];
+		string out_label = argv[8];
+		dir_read = "../../data/Widom_line/" + N_str + "/" + Pressure + "/" + Temperature + "/" + Simu_case + "/";
+		string dir_matrix = "../../data/Widom_line/matrix/";
+		string dir_eigen = "../../data/Widom_line/eigen/";
+		matrix_name = dir_matrix + to_string(N) + "_" + Pressure + "_" + Temperature + "_" + out_label + ".txt";
+		eigen_name = dir_eigen + to_string(N) + "_" + Pressure + "_" + Temperature + "_" + out_label + "_eigen.txt";
+		std::cout << dir_read << ". filename_input: " << filename_input << ". matrix_name: " << matrix_name << ". eigen_name: " << eigen_name << endl;
+		N_micro = N;
+		GRID_SIZE = std::round(pow(N, 1.0 / 3.0)); //四舍五入
+	}
+	int isCreate = createDir(dir_write);
+	if (isCreate == 0) {
+		cout << "Created path: " << dir_write << endl;
+	}
+	else {
+		printf("error: create path failed!\n");
+		exit(-1);
+	}
+	const string file_traj = dir_read + filename_input;
 	std::cout << "ini_config:" << ini_config << ". total_config: " << total_config << ". d_S: " << d_S << ". file_traj: " << file_traj << endl;
 
 #ifdef gen_rdf
@@ -230,11 +152,19 @@ int main(int argc, char* argv[])
 	vector<double> rdf_All(N_Bins_r, 0.0);
 #endif
 
-#if defined(gen_sq) || defined(gen_ISF) || defined(gen_SISF)
+#if defined(gen_L) || defined(gen_sq) || defined(gen_ISF) || defined(gen_SISF)
 	double L_mean[Dim] = { 0.0 };
 	get_L_mean(file_traj, L_mean); //得到平均的盒子尺寸
 #endif
-
+#if defined(gen_L)
+	string outname = dir_out + "L.txt";
+	std::ofstream outputFile(outname, ios::out);
+	for (int i_Dim = 0; i_Dim < Dim; i_Dim++) {
+		outputFile << L_mean[i_Dim] << endl;
+	}
+	outputFile.close();
+	return 0;
+#endif
 #ifdef gen_sq
 #ifdef read_wavevectors
 	std::vector<Vec3_wave_vector> wavevectors_all = read_wavevector();
@@ -243,7 +173,6 @@ int main(int argc, char* argv[])
 #endif
 	Structure_Factor Sq;
 	init_structure_factor(wavevectors_all, Sq);
-
 #endif
 
 #if defined(gen_ISF) || defined(gen_SISF)
@@ -468,7 +397,7 @@ int main(int argc, char* argv[])
 			compute_force_chain(Positions, L);
 #endif
 
-			Positions_last = Positions;			
+			Positions_last = Positions;
 			for (int i_Dim = 0; i_Dim < Dim; i_Dim++) {
 				L_last[i_Dim] = L[i_Dim];
 			}

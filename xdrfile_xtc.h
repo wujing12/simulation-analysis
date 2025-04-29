@@ -20,11 +20,11 @@ extern "C" {
 
 #include "xdrfile.h"
   
-  /* All functions return exdrOK if succesfull. 
+  /* All physics return exdrOK if succesfull. 
    * (error codes defined in xdrfile.h).
    */  
    
-  /* This function returns the number of atoms in the xtc file in *N_atom */
+  /* This physics returns the number of atoms in the xtc file in *N_atom */
   extern int read_xtc_natoms(char *fn,int *N_atom);
   
   /* Read one frame of an open xtc file */

@@ -23,7 +23,7 @@ inline void get_chi4(Trajectory& traj, const vector<vector<double>>& L_traj, con
             double Q = 0.0;
             for (size_t i = 0; i < N; ++i) {
                 double dr = distance3D(traj[t1][i], traj[t0][i]);
-                if (dr < Al_Al_d) {
+                if (dr < distance_cut) {
                     Q += 1.0;
                 }
             }

@@ -52,7 +52,6 @@ inline void get_rdf(const std::vector<Vec3>& positions, const double(&L)[Dim], v
 		rdf_22[i] += i_rdf_22[i] / (p_2 * p_2 * positions.size() * idealGasCount);
 		rdf_All[i] += i_rdf_All[i] / (positions.size() * idealGasCount);
 	}
-
 }
 
 // Êä³ö RDF
@@ -73,7 +72,6 @@ inline void get_O_Si(const std::vector<Vec3>& positions, const double(&L)[Dim]) 
 	for (int i = 0; i < positions.size(); ++i) {
 		if (positions[i].kind == 1) { //ÑõÔ­×Ó
 			double N_Si = 0.0;
-
 			for (int j = 0; j < positions.size(); ++j) {
 				if (positions[j].kind == 2) {//SiÁÚ¾Ó
 					double dist_2 = Distance_2(positions[i], positions[j], L);

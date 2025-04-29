@@ -27,7 +27,7 @@
  *         libraries will read/write this correctly.
  *       - Some systems (VAX...) don't use IEEE floating point. Their system
  *         XDR libraries will convert to/from this automatically.
- * -# XDR libraries are required for NFS and lots of other network functions.
+ * -# XDR libraries are required for NFS and lots of other network physics.
  *    This means there isn't a single Unix-like system that doesn't have them.
  * -# There is NO extra metadata whatsoever, and we write plain XDR files.
  *    If you write a float, it will take exactly 4 bytes in the file. 
@@ -92,7 +92,7 @@ extern "C"
 
 	/*! \brief Open a portable binary file, just like fopen()
 	 *
-	 *  Use this routine much like calls to the standard library function
+	 *  Use this routine much like calls to the standard library physics
 	 *  fopen(). The only difference is that the returned pointer should only
 	 *  be used with routines defined in this header.
 	 *
@@ -109,7 +109,7 @@ extern "C"
 
 	/*! \brief Close a previously opened portable binary file, just like fclose()
 	 *
-	 *  Use this routine much like calls to the standard library function
+	 *  Use this routine much like calls to the standard library physics
 	 *  fopen(). The only difference is that it is used for an XDRFILE handle
 	 *  instead of a FILE handle.
 	 * 

@@ -1,21 +1,21 @@
 #pragma once
-#define gromacs_traj
+//#define gromacs_traj
 //#define gen_cluster
 //#define gen_tetrahedron
 //#define gen_non_affine_D
 //#define gen_sq
 //#define gen_rdf
 //#define gen_MSD
-#define gen_SISF
+//#define gen_SISF
 //#define gen_position
 //#define gen_trajectory
 //#define gen_z
 //#define gen_O_Si
 //#define gen_force_chain
 //#define gen_angle
-//#define gen_matrix
-//#define gen_bond
+#define gen_matrix
 //#define gen_eigen
+//#define gen_bond
 //#define gen_D_NA
 //#define gen_p_hop
 //#define gen_momentum
@@ -24,6 +24,7 @@
 //#define gen_matrix_water
 //#define read_wavevectors
 //#define gen_ISF
+//#define gen_L
 
 int N = 10000;// 粒子数
 int N_mol = N;// 分子数
@@ -40,19 +41,16 @@ constexpr double pi = 3.1415926535898;
 constexpr int N_head = 5;
 constexpr int N_infor = 9;
 constexpr double Si_Si_d2 = 3.45 * 3.45; //坐标的单位为埃
-constexpr double Si_Si_S_d2 = 6.17 * 6.17;
 constexpr double Si_O_d2 = 2.19 * 2.19; 
 constexpr double error = 1e-6;
-constexpr bool using_arry = true;
-double Al_Al_d = 2.8, O_O_d2 = 0.0;
+constexpr bool parallel = true;
+double distance_cut = 0.0;
 bool first_layer;
-int Num_1 = 0, Num_2 = 0;
-int kind, serial, M, N_micro, dt, min_serial;
-string tmp, traj_filename = "traj.atom", micro_form, matrix_name, eigen_name, decompose_way = "SVD", if_relative, matrix_kind, finite_size, atom_kind, part, functions, matrix_label = "K_out.dat", eigen_label = "K_eigen.dat";
-string dir_read, dir_out, dir_matrix, dir_eigen, dir_system, dir_data = "data", N_str, Pressure, Temperature, Simu_case, out_label, smoothing; // CuZr AlSm SiO2
+int Num_1 = 0, Num_2 = 0, GRID_SIZE = 0;
+int N_micro, dt;
+string tmp, project, dir_write, dir_read, dir_out, filename_input, atom_kind, micro_form, matrix_name, eigen_name, decompose_way, matrix_kind; // CuZr AlSm SiO2
 vector<int> atom_kind_Toluene = { 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 1, 2, 2, 2 }; //甲苯
-vector<double> atom_masses_Toluene = { 12.01,  12.01,  12.01,  12.01,  12.01,  12.01, 1.008, 1.008, 1.008, 1.008, 1.008,  12.01, 1.008, 1.008, 1.008 };
-vector<string> Temp_list;
+vector<double> atom_masses_Toluene = { 12.01,  12.01,  12.01,  12.01,  12.01,  12.01, 1.008, 1.008, 1.008, 1.008, 1.008,  12.01, 1.008, 1.008, 1.008 }; //甲苯
 
 inline void reset_file(const string& outname) {
 	std::ofstream outputFile(outname, ios::out);

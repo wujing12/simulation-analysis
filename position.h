@@ -29,7 +29,7 @@ void get_position(const std::vector<Vec3>& positions, const double(&L)[Dim]) {
 	std::ofstream output_posi(outname_posi, ios::app);
 	output_posi << L[0] << " " << L[1] << " " << L[2] << endl;
 
-	for (int i = min_serial; i < positions.size(); ++i) {
+	for (int i = Num_1; i < positions.size(); ++i) {
 		output_posi << positions[i].x << " " << positions[i].y << " " << positions[i].z << endl;
 	}
 	output_posi.close();

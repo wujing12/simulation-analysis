@@ -1,5 +1,6 @@
 #pragma once
 inline void Stat(string file_traj, int& Num_1, int& Num_2, int& N) {
+	int serial;
 	ifstream read_traj(file_traj);
 	for (int j = 0; j < 3; j++) {
 		getline(read_traj, tmp);
@@ -99,6 +100,7 @@ inline void get_L_mean(const string& file_traj, double(&L_mean)[Dim]) {
 		std::cout << L_mean[i_Dim] << " ";
 	}
 	std::cout << endl;
+
 }
 inline void skip_lammps_trajectory(std::ifstream& read_traj) {
 	for (int i = 0; i < ini_config; i++) { //读取前置的不需要的构型
@@ -210,7 +212,7 @@ inline void read_gromacs_trajectory(const string& file_traj, Trajectory& traject
 }
 inline void read_lammps_trajectory(std::ifstream& read_traj, std::vector<vector<double>>& L_traj, Trajectory& trajectory) {
 	skip_lammps_trajectory(read_traj);
-	int count = 0;
+	int count = 0, kind, serial;
 	for (int i_config = 0; i_config < total_config; i_config++) {
 		if ((i_config % d_S == i_d_S)) {
 			
@@ -270,10 +272,11 @@ inline void read_lammps_trajectory(std::ifstream& read_traj, std::vector<vector<
 			}
 		}
 	}
+	read_traj.close();
 }
 
 inline void read_lammps_trajectory(std::ifstream& read_traj, vector<Vec3>& Positions, double(&L)[Dim]) {
-
+	int serial, kind;
 	for (int j = 0; j < N_head; j++) {
 		getline(read_traj, tmp);
 	}

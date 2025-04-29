@@ -9,8 +9,8 @@ void build_neighbors_SL(const vector<vector<double>>& positions, const vector<do
 		for (size_t j = 0; j < positions.size(); ++j) {
 			if (i != j) {
 				double dist2 = Distance_2(positions[i], positions[j], L);
-				//cout << i << " " << j << " " << positions[i][0] << " " << positions[i][1] << " " << positions[i][2] << " " << positions[j][0] << " " << positions[j][1] << " " << positions[j][2] << " " << dist2 << " " << O_O_d2 << endl;
-				if (dist2 <= O_O_d2) {
+				//cout << i << " " << j << " " << positions[i][0] << " " << positions[i][1] << " " << positions[i][2] << " " << positions[j][0] << " " << positions[j][1] << " " << positions[j][2] << " " << dist2 << " " << distance_cut << endl;
+				if (dist2 <= distance_cut) {
 					neighbors[i].push_back(Line(j, dist2));
 				}
 			}
@@ -31,7 +31,7 @@ void build_neighbors_FL(const vector<vector<double>>& positions, const vector<do
 	for (size_t j = 0; j < positions.size(); ++j) {
 		if (i != j) {
 			double dist2 = Distance_2(positions[i], positions[j], L);
-			//cout << i << " " << j << " " << positions[i][0] << " " << positions[i][1] << " " << positions[i][2] << " " << positions[j][0] << " " << positions[j][1] << " " << positions[j][2] << " " << dist2 << " " << O_O_d2 << endl;
+			//cout << i << " " << j << " " << positions[i][0] << " " << positions[i][1] << " " << positions[i][2] << " " << positions[j][0] << " " << positions[j][1] << " " << positions[j][2] << " " << dist2 << " " << distance_cut << endl;
 			if (dist2 <= cut) {
 				neighbors[i].push_back(Line(j, dist2));
 			}
@@ -167,8 +167,8 @@ inline void get_non_affine_D(const Trajectory& traj, const vector<vector<double>
 		layer = "SL";
 	}
 	// 打开原子级和统计输出文件
-	std::ofstream out_file(dir_out + to_string(min_serial) + "_dt" + to_string(dt) + "_" + layer + ".txt", ios::out);
-	std::ofstream out_file_kind(dir_out + to_string(min_serial) + "_dt" + to_string(dt) + "_" + layer + "_kind.txt", ios::out);
+	std::ofstream out_file(dir_out + to_string(Num_1) + "_dt" + to_string(dt) + "_" + layer + ".txt", ios::out);
+	std::ofstream out_file_kind(dir_out + to_string(Num_1) + "_dt" + to_string(dt) + "_" + layer + "_kind.txt", ios::out);
 	string outname1 = dir_out + "kind1_dt" + to_string(dt) + "_" + layer + "_sta.txt";
 	string outname2 = dir_out + "kind2_dt" + to_string(dt) + "_" + layer + "_sta.txt";
 	std::ofstream out_file1(outname1, ios::out);	
@@ -187,7 +187,7 @@ inline void get_non_affine_D(const Trajectory& traj, const vector<vector<double>
 			const auto& pos_t1 = traj[t0 + dt];
 			neighbors.clear(); 
 			// 对 t₀ 时刻的每个粒子计算非仿射位移
-			for (size_t i = min_serial; i < pos_t0.size(); ++i) {
+			for (size_t i = Num_1; i < pos_t0.size(); ++i) {
 				// 更新 t₀ 时刻的邻居列表
 				if (first_layer) {
 					build_neighbors_FL(pos_t0, L_traj[t0], neighbors, Si_O_d2, i);
@@ -223,7 +223,7 @@ inline void get_non_affine_D(const Trajectory& traj, const vector<vector<double>
 		const auto& pos_t0 = traj[t0];
 		vector<vector<Line>> neighbors(pos_t0.size());
 		// 构建 t₀ 时刻的邻居列表
-		for (size_t i = min_serial; i < pos_t0.size(); ++i) {			
+		for (size_t i = Num_1; i < pos_t0.size(); ++i) {			
 			if (first_layer) {
 				build_neighbors_FL(pos_t0, L_traj[t0], neighbors, Si_O_d2, i);
 			}
@@ -238,7 +238,7 @@ inline void get_non_affine_D(const Trajectory& traj, const vector<vector<double>
 			// 提取t₁ 时刻的粒子数据及盒子尺寸
 			const auto& pos_t1 = traj[t1];
 			// 对 t₀ 时刻的每个粒子计算非仿射位移
-			for (size_t i = min_serial; i < pos_t0.size(); ++i) {
+			for (size_t i = Num_1; i < pos_t0.size(); ++i) {
 				double D = 0.0, D_d[Dim] = { 0.0 };
 				compute_non_affine_disp_for_particle(pos_t0, pos_t1, i, neighbors, D, D_d, L_traj[t0], L_traj[t1]);
 				//out_file << D_d[0] << " " << D_d[1] << " " << D_d[2] << endl;

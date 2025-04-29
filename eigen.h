@@ -10,15 +10,14 @@ inline bool containsNaNInf(const Eigen::MatrixXf& mat) {
 	}
 	return false;  
 }
-inline void Matrix_processing(Eigen::MatrixXf& Matrix_run, vector<double>& mean_class, vector<double>& mean_class_2) {
-	if (functions == "supercritical_eigen") {
-		N = N_micro;
+inline void Matrix_processing(Eigen::MatrixXf& Matrix_run, vector<double>& mean_class, vector<double>& mean_class_2, const int M) {
+	if (project == "super_critical") {
 		for (int i = 0; i < Matrix_run.cols(); i++) { //对列进行标准化			
 			for (size_t j = 0; j < Matrix_run.rows(); j++) {
 				mean_class[0] += Matrix_run(j, i);
 			}
 		}
-		mean_class[0] /= (Matrix_run.cols() * N);
+		mean_class[0] /= (Matrix_run.cols() * N_micro);
 		std::cout << mean_class[0] << endl;
 		for (int i = 0; i < Matrix_run.cols(); i++) { //对列进行标准化
 			for (size_t j = 0; j < Matrix_run.rows(); j++) {
@@ -26,11 +25,9 @@ inline void Matrix_processing(Eigen::MatrixXf& Matrix_run, vector<double>& mean_
 			}
 		}
 	}
-	else if (functions == "AlSm_eigen") {
-		
+	else if (project == "AlSm") {	
 		int num_kind = stoi(micro_form);
-		N = N_micro / num_kind;
-		cout << "num_kind: " << num_kind << ". N: " << N << endl;
+		cout << "num_kind: " << num_kind << endl;
 		for (int i = 0; i < Matrix_run.cols(); i++) { //对列进行标准化
 			for (size_t j = 0; j < Matrix_run.rows(); j++) {
 				int micro_kind = j % num_kind;
@@ -59,8 +56,8 @@ inline void Matrix_processing(Eigen::MatrixXf& Matrix_run, vector<double>& mean_
 	else {
 		int num_kind = stoi(micro_form);  // 将 string 转为 int
 
-		N = N_micro / num_kind;
-		cout << "num_kind: " << num_kind << ". N: " << N << endl;
+		int N_one = N_micro / num_kind;
+		cout << "num_kind: " << num_kind << ". N_pro: " << N_one << endl;
 		for (int i = 0; i < Matrix_run.cols(); i++) { //对列进行标准化
 			for (size_t j = 0; j < Matrix_run.rows(); j++) {
 				int micro_kind = j % num_kind;
@@ -69,8 +66,8 @@ inline void Matrix_processing(Eigen::MatrixXf& Matrix_run, vector<double>& mean_
 			}
 		}
 		for (size_t j = 0; j < mean_class.size(); j++) {
-			mean_class[j] = mean_class[j] / (Matrix_run.cols() * N);
-			mean_class_2[j] = mean_class_2[j] / (Matrix_run.cols() * N);
+			mean_class[j] = mean_class[j] / (Matrix_run.cols() * N_one);
+			mean_class_2[j] = mean_class_2[j] / (Matrix_run.cols() * N_one);
 			std::cout << mean_class[j] << " " << mean_class_2[j] << endl;
 		}
 
@@ -82,7 +79,7 @@ inline void Matrix_processing(Eigen::MatrixXf& Matrix_run, vector<double>& mean_
 			}
 		}
 	}
-	if (matrix_kind != "Full" && functions == "supercooled") {
+	if (matrix_kind != "Full" && project == "supercooled") {
 		std::vector<int> keepRows;
 		if (matrix_kind == "3") {
 			for (int row = 0; row < Matrix_run.rows(); ++row) {
@@ -121,8 +118,8 @@ inline void Matrix_processing(Eigen::MatrixXf& Matrix_run, vector<double>& mean_
 }
 inline void get_eigen(const string matrix_name, const string eigen_name) {
 
-	M = count_lines_eigen(matrix_name);
-	std::cout << "Name: " << matrix_name << ", M: " << M << endl;
+	const int M = count_lines_eigen(matrix_name);
+	std::cout << "Name: " << matrix_name << ", N_micro: " << N_micro << ", M: " << M << endl;
 	Eigen::MatrixXf Matrix_run;
 	Matrix_run.resize(N_micro, M); //每列是一个构型的微观态
 
@@ -130,13 +127,13 @@ inline void get_eigen(const string matrix_name, const string eigen_name) {
 	double V = zero;
 
 	for (int i = 0; i < Matrix_run.cols(); i++) { //每行是一个构型的微观态
-		if (functions == "supercritical_eigen") {
+		if (project == "super_critical") {
 			Matrixdata >> V; //格点体积
 			//cout << V << " ";
-		}	
+		}
 		for (size_t j = 0; j < Matrix_run.rows(); j++) {
 			Matrixdata >> Matrix_run(j, i);
-			if (functions == "supercritical_eigen") {
+			if (project == "super_critical") {
 				Matrix_run(j, i) = Matrix_run(j, i) / V;
 			}
 		}
@@ -153,7 +150,7 @@ inline void get_eigen(const string matrix_name, const string eigen_name) {
 
 	vector<double> mean_class(7, zero);
 	vector<double> mean_class_2(7, zero);
-	Matrix_processing(Matrix_run, mean_class, mean_class_2);
+	Matrix_processing(Matrix_run, mean_class, mean_class_2, M);
 
 	if (decompose_way == "Eigen") {
 		double norm = Matrix_run.norm();
@@ -172,18 +169,10 @@ inline void get_eigen(const string matrix_name, const string eigen_name) {
 		std::ofstream output_eigen(eigen_name, ios::out);
 		for (int i = 0; i < eigenvectors.rows(); ++i) {
 			for (int j = 0; j < max_cols; ++j) {
-				output_eigen << sqrt(static_cast<double>(N)) * eigenvectors(i, eigenvectors.rows() - j - 1) << " ";
+				output_eigen << sqrt(static_cast<double>(N_micro)) * eigenvectors(i, eigenvectors.rows() - j - 1) << " ";
 			}
 			output_eigen << pow(eigenvalues(eigenvectors.rows() - i - 1), 0.5) << std::endl;
 		}
-		for (size_t j = 0; j < mean_class.size() - 1; j++) {
-			output_eigen << mean_class[j] << " ";
-		}
-		output_eigen << mean_class[mean_class.size() - 1] << std::endl;
-		for (size_t j = 0; j < mean_class_2.size() - 1; j++) {
-			output_eigen << mean_class_2[j] << " ";
-		}
-		output_eigen << mean_class_2[mean_class_2.size() - 1] << std::endl;
 	}
 	else if (decompose_way == "SVD") {
 		double norm = Matrix_run.norm();
@@ -210,7 +199,7 @@ inline void get_eigen(const string matrix_name, const string eigen_name) {
 		// 输出左奇异值矩阵和本征值
 		for (int i = 0; i < left_singular_vectors.rows(); ++i) {
 			for (int j = 0; j < max_cols; ++j) {
-				output_eigen << sqrt(static_cast<double>(N)) * left_singular_vectors(i, j) << " ";
+				output_eigen << sqrt(static_cast<double>(N_micro)) * left_singular_vectors(i, j) << " ";
 			}
 			if (i < K) {
 				output_eigen << singular_values(i) << std::endl;
@@ -219,14 +208,6 @@ inline void get_eigen(const string matrix_name, const string eigen_name) {
 				output_eigen << "0" << std::endl;
 			}
 		}
-		for (size_t j = 0; j < mean_class.size() - 1; j++) {
-			output_eigen << mean_class[j] << " ";
-		}
-		output_eigen << mean_class[mean_class.size() - 1] << std::endl;
-		for (size_t j = 0; j < mean_class_2.size() - 1; j++) {
-			output_eigen << mean_class_2[j] << " ";
-		}
-		output_eigen << mean_class_2[mean_class_2.size() - 1] << std::endl;
 		// 输出右奇异值矩阵
 		for (int i = 0; i < right_singular_vectors.rows(); ++i) {
 			for (int j = 0; j < max_cols; ++j) {
